@@ -46,6 +46,9 @@ import org.apache.kafka.streams.kstream.TableJoined;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.processor.StateStore;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessor;
+import org.apache.kafka.streams.processor.api.FixedKeyProcessorSupplier;
+import org.apache.kafka.streams.processor.api.FixedKeyRecord;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
@@ -1331,6 +1334,45 @@ public class StreamsBuilderTest {
         builder.build();
         final ProcessorTopology topology = builder.internalTopologyBuilder.rewriteTopology(new StreamsConfig(props)).buildTopology();
         assertNamesForOperation(topology, "KSTREAM-SOURCE-0000000000", "test-fixed-key-processor");
+    }
+
+    @Test
+    public void shouldPlaceProcessorsLinkedByStoreBuilderInSameSubtopology() {
+        final StoreBuilder<KeyValueStore<String, String>> store =
+            Stores.keyValueStoreBuilder(
+                Stores.persistentKeyValueStore("store"),
+                Serdes.String(),
+                Serdes.String());
+
+        final StreamsBuilder localBuilder = new StreamsBuilder();
+        localBuilder.stream("topic1")
+            .processValues(new StoreLinkedFixedKeyProcessorSupplier<>(Set.of(store)));
+        localBuilder.stream("topic2")
+            .processValues(new StoreLinkedFixedKeyProcessorSupplier<>(Set.of(store)));
+
+        assertEquals(1, localBuilder.build().describe().subtopologies().size());
+    }
+
+    private static class StoreLinkedFixedKeyProcessorSupplier<K, V> implements FixedKeyProcessorSupplier<K, V, V> {
+        private final Set<StoreBuilder<?>> stores;
+
+        StoreLinkedFixedKeyProcessorSupplier(final Set<StoreBuilder<?>> stores) {
+            this.stores = stores;
+        }
+
+        @Override
+        public Set<StoreBuilder<?>> stores() {
+            return stores;
+        }
+
+        @Override
+        public FixedKeyProcessor<K, V, V> get() {
+            return new FixedKeyProcessor<>() {
+                @Override
+                public void process(final FixedKeyRecord<K, V> record) {
+                }
+            };
+        }
     }
 
     @Test
