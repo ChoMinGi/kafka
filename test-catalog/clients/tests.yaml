@@ -132,6 +132,7 @@ org.apache.kafka.clients.NetworkClientTest:
 - testSimpleRequestResponse
 - testSimpleRequestResponseWithNoBrokerDiscovery
 - testSimpleRequestResponseWithStaticNodes
+- testStickyNodeDoesNotUseStaleIpOnReconnect
 - testTelemetryRequest
 - testUnsupportedApiVersionsRequestWithVersionProvidedByTheBroker
 - testUnsupportedApiVersionsRequestWithoutVersionProvidedByTheBroker
@@ -425,6 +426,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testOffsetCommitNumRetries
 - testOffsetCommitRetryBackoff
 - testOffsetCommitWithMultipleErrors
+- testOutOfMemoryErrorPropagation
 - testParseDescribeClusterResponseWithError
 - testParseDescribeClusterResponseWithUnexpectedEndpointType
 - testParseSuccessfulDescribeClusterResponse
@@ -809,6 +811,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testBeginningOffsetsAuthenticationFailure
 - testBeginningOffsetsTimeout
 - testChangingRegexSubscription
+- testClassicProtocolLogsRecommendationToTryConsumerProtocol
 - testClientInstanceId
 - testClientInstanceIdInvalidTimeout
 - testClientInstanceIdNoTelemetryReporterRegistered
@@ -826,10 +829,12 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testConstructorFailsOnNetworkClientConstructorFailure
 - testConstructorInvalidMetricReporters
 - testConsumerJmxPrefix
+- testConsumerProtocolDoesNotLogRecommendation
 - testCurrentLag
 - testCurrentLagClearsFlagOnFatalPartitionError
 - testCurrentLagClearsFlagOnRetriablePartitionError
 - testCurrentLagPreventsMultipleInFlightRequests
+- testDefaultProtocolLogsRecommendationToTryConsumerProtocol
 - testDisableJmxAndClientTelemetryReporter
 - testEmptyGroupId
 - testEndOffsetsAuthenticationFailure
@@ -865,6 +870,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testMissingOffsetNoResetPolicy
 - testMonitorablePlugins
 - testNoCommittedOffsets
+- testNoGroupIdDoesNotLogGroupProtocolMessage
 - testOffsetIsValidAfterSeek
 - testOffsetOfPausedPartitions
 - testOffsetsForTimesAuthenticationFailure
@@ -910,6 +916,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testSubscriptionOnNullTopicCollection
 - testSubscriptionWithEmptyPartitionAssignment
 - testUnSubscribingNonExisingMetricsDoesntCauseError
+- testUnsubscribeDoesNotCommitOffsetsEvenWithAutoCommitEnabled
 - testUnsubscribeShouldTriggerPartitionsLostWithNoGeneration
 - testUnsubscribeShouldTriggerPartitionsRevokedWithValidGeneration
 - testUnsubscribingCustomMetricsWithSameNameDoesntAffectConsumerMetrics
@@ -1194,7 +1201,10 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testOffsetsForTimesOnNullPartitions
 - testOffsetsForTimesTimeoutException
 - testOffsetsForTimesWithZeroTimeout
+- testPartitionsAssignedEventSendsErrorWhenApplyAssignmentFails
+- testPollDoesNotAddNewAsyncPollEventWhenOneIsAlreadyInFlight
 - testPollThrowsInterruptExceptionIfInterrupted
+- testPollWaitsForReconciliationCheckComplete
 - testProcessBackgroundEventsTimesOut
 - testProcessBackgroundEventsWithInitialDelay
 - testProcessBackgroundEventsWithoutDelay
@@ -1207,6 +1217,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSeekToEnd
 - testSeekToEndWithException
 - testStreamRebalanceData
+- testStreamsTasksAssignedEventSendsErrorWhenApplyAssignmentFails
 - testSubscribeGeneratesEvent
 - testSubscribePatternAgainstBrokerNotSupportingRegex
 - testSubscribePatternGeneratesEvent
@@ -1218,13 +1229,16 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSubscriptionOnEmptyTopic
 - testSubscriptionOnNullTopic
 - testSuccessfulStartupShutdown
+- testUnsubscribeDoesNotCommitOffsetsEvenWithAutoCommitEnabled
 - testUnsubscribeGeneratesUnsubscribeEvent
+- testUnsubscribeWithPendingAssignmentEvent
 - testUnsubscribeWithoutGroupId
 - testVerifyApplicationEventOnShutdown
 - testWakeupAfterEmptyFetch
 - testWakeupAfterNonEmptyFetch
 - testWakeupBeforeCallingPoll
 - testWakeupCommitted
+- testWakeupWhileWaitingOnReconciliationCheck
 org.apache.kafka.clients.consumer.internals.AutoOffsetResetStrategyTest:
 - testEqualsAndHashCode
 - testFromString
@@ -1357,6 +1371,7 @@ org.apache.kafka.clients.consumer.internals.ConsumerMembershipManagerTest:
 - testHeartbeatSuccessfulResponseWhenLeavingGroupCompletesLeave
 - testIgnoreHeartbeatResponseWhenNotInGroup
 - testIgnoreLeaveResponseWhenNotLeavingGroup
+- testLeaveGroupDuringReconciliationThenRejoin
 - testLeaveGroupEpoch
 - testLeaveGroupEpochOnClose
 - testLeaveGroupWhenMemberAlreadyLeaving
@@ -1821,6 +1836,7 @@ org.apache.kafka.clients.consumer.internals.FetchCollectorTest:
 - testFetchWithUnknownServerError
 - testFetchingPausedPartitionsYieldsNoRecords
 - testNoResultsIfInitializing
+- testPositionUpdatedBeforeDrainOnExhaustedFetch
 - testReadCommittedWithAbortedTransaction
 org.apache.kafka.clients.consumer.internals.FetchConfigTest:
 - testBasicFromConsumerConfig
@@ -2226,9 +2242,11 @@ org.apache.kafka.clients.consumer.internals.ShareConsumeRequestManagerTest:
 - testHandleFetchResponseError
 - testHeaders
 - testInvalidDefaultRecordBatch
-- testLeadershipChangeAfterFetchBeforeClose
+- testLeadershipChangeAfterFetchBeforeCloseMove
 - testLeadershipChangeAfterFetchBeforeCommitAsync
 - testLeadershipChangeAfterFetchBeforeCommitSync
+- testLeadershipChangeAfterFetchMoveBeforeClose
+- testLeadershipChangeAfterFetchMoveBeforeCloseMove
 - testMultipleFetches
 - testMultipleTopicsFetch
 - testMultipleTopicsFetchError
@@ -2280,6 +2298,7 @@ org.apache.kafka.clients.consumer.internals.ShareConsumerImplTest:
 - testInvalidGroupId
 - testMetricsRemovedOnClose
 - testMultipleBackgroundErrors
+- testPollDoesNotAddNewSharePollEventWhenOneIsAlreadyInFlight
 - testProcessBackgroundEventsTimesOut
 - testProcessBackgroundEventsWithInitialDelay
 - testProcessBackgroundEventsWithoutDelay
@@ -2469,6 +2488,7 @@ org.apache.kafka.clients.consumer.internals.StreamsMembershipManagerTest:
 - testIsGroupReadyWithNoStatuses
 - testIsGroupReadyWithOtherStatuses
 - testJoining
+- testLeaveGroupDuringReconciliationThenRejoin
 - testLeaveGroupOnCloseWhenInGroupWithAssignment
 - testLeaveGroupOnCloseWhenNotInGroup
 - testLeaveGroupOnCloseWhenNotInGroupAndFenced
@@ -5356,9 +5376,6 @@ org.apache.kafka.common.telemetry.internals.TelemetryMetricNamingConventionTest:
 - testNullPrefix
 - testStandardConsumerMetrics
 - testStandardProducerMetrics
-org.apache.kafka.common.utils.AbstractIteratorTest:
-- testEmptyIterator
-- testIterator
 org.apache.kafka.common.utils.AppInfoParserTest:
 - testClientIdWontAddRepeatedly
 - testRegisterAppInfoRegistersMetrics
@@ -5374,33 +5391,15 @@ org.apache.kafka.common.utils.ByteBufferOutputStreamTest:
 - testWriteDirectByteBuffer
 org.apache.kafka.common.utils.ByteBufferUnmapperTest:
 - testUnmap
-org.apache.kafka.common.utils.ByteUtilsTest:
-- testCorrectnessReadUnsignedVarint
-- testCorrectnessWriteUnsignedVarint
-- testDouble
-- testInvalidVarint
-- testInvalidVarlong
-- testReadInt
-- testReadUnsignedInt
-- testReadUnsignedIntLEFromArray
-- testReadUnsignedIntLEFromInputStream
-- testSizeOfUnsignedVarint
-- testSizeOfVarlong
-- testUnsignedVarintSerde
-- testVarintSerde
-- testVarlongSerde
-- testWriteUnsignedIntLEToArray
-- testWriteUnsignedIntLEToOutputStream
 org.apache.kafka.common.utils.BytesTest:
-- testBytesLexicographicCases
-- testIncrement
-- testIncrementUpperBoundary
-- testIncrementWithSubmap
-org.apache.kafka.common.utils.ChecksumsTest:
-- testUpdateByteBuffer
-- testUpdateByteBufferWithOffsetPosition
-- testUpdateInt
-- testUpdateLong
+- compareToReflectsLexicographicUnsignedOrdering
+- constructorThrowsForNullInput
+- equalsReflectsContentIdentityAndType
+- getReturnsUnderlyingArray
+- hashCodeIsConsistentAndContentBased
+- wrapEmptyArrayProducesEmptyBytes
+- wrapReturnsBytesBackedBySameArray
+- wrapReturnsNullForNullInput
 org.apache.kafka.common.utils.ChunkedBytesStreamTest:
 - testCorrectnessForMethodRead
 - testCorrectnessForMethodReadByte
@@ -5411,68 +5410,15 @@ org.apache.kafka.common.utils.ChunkedBytesStreamTest:
 - testEndOfSourceForMethodSkip
 - testEofErrorForMethodReadFully
 - testInvalidInputsForMethodRead
-org.apache.kafka.common.utils.CircularIteratorTest:
-- testCycleCollection
-- testEmptyCollection
-- testNullCollection
-org.apache.kafka.common.utils.CollectionUtilsTest:
-- testSubtractMapDoesntRemoveAnythingWhenEmptyMap
-- testSubtractMapRemovesSecondMapsKeys
 org.apache.kafka.common.utils.ConfigUtilsTest:
 - testConfigMapToRedactedStringForEmptyMap
 - testConfigMapToRedactedStringWithSecrets
 - testGetBoolean
-org.apache.kafka.common.utils.Crc32CTest:
-- testValue
 org.apache.kafka.common.utils.ExitTest:
 - shouldAddShutdownHookImmediately
 - shouldExitImmediately
 - shouldHaltImmediately
 - shouldNotInvokeShutdownHookImmediately
-org.apache.kafka.common.utils.ExponentialBackoffManagerTest:
-- testBackOffWithJitter
-- testBackOffWithoutJitter
-- testCanAttempt
-- testIncrementAttempt
-- testInitialState
-- testResetAttempts
-org.apache.kafka.common.utils.ExponentialBackoffTest:
-- testExponentialBackoff
-- testExponentialBackoffWithInvalidJitter
-- testExponentialBackoffWithoutJitter
-org.apache.kafka.common.utils.FixedOrderMapTest:
-- shouldForbidConditionalRemove
-- shouldForbidRemove
-- shouldMaintainOrderWhenAdding
-org.apache.kafka.common.utils.ImplicitLinkedHashCollectionTest:
-- testCollisions
-- testEmptyListIterator
-- testEnlargement
-- testEquals
-- testFindContainsRemoveOnEmptyCollection
-- testInsertDelete
-- testInsertingTheSameObjectMultipleTimes
-- testListIteratorCreation
-- testListIteratorRemove
-- testListIteratorTraversal
-- testListViewGet
-- testListViewModification
-- testManyInsertsAndDeletes
-- testMoveToEnd
-- testNullForbidden
-- testRemovals
-- testSameKeysDifferentValues
-- testSetViewGet
-- testSetViewModification
-- testSort
-- testTraversal
-org.apache.kafka.common.utils.ImplicitLinkedHashMultiCollectionTest:
-- testEnlargement
-- testFindFindAllContainsRemoveOnEmptyCollection
-- testInsertDelete
-- testManyInsertsAndDeletes
-- testNullForbidden
-- testTraversal
 org.apache.kafka.common.utils.JavaTest:
 - testIsIBMJdk
 - testIsIBMJdkSemeru
@@ -5484,12 +5430,6 @@ org.apache.kafka.common.utils.MockTimeTest:
 - testAutoTickMs
 - testWaitObjectConditionSatisfied
 - testWaitObjectTimeout
-org.apache.kafka.common.utils.PrimitiveRefTest:
-- testIntRef
-- testLongRef
-org.apache.kafka.common.utils.SanitizerTest:
-- testJmxSanitize
-- testSanitize
 org.apache.kafka.common.utils.SecurityUtilsTest:
 - testAddCustomSecurityProvider
 - testParseKafkaPrincipalWithNonUserPrincipalType
@@ -5502,11 +5442,6 @@ org.apache.kafka.common.utils.ShellTest:
 org.apache.kafka.common.utils.SystemTimeTest:
 - testWaitObjectConditionSatisfied
 - testWaitObjectTimeout
-org.apache.kafka.common.utils.ThreadUtilsTest:
-- testThreadNameWithNumberDemon
-- testThreadNameWithNumberNoDemon
-- testThreadNameWithoutNumberDemon
-- testThreadNameWithoutNumberNoDemon
 org.apache.kafka.common.utils.TimerTest:
 - testNonMonotonicUpdate
 - testTimeoutOverflow
@@ -5588,5 +5523,95 @@ org.apache.kafka.common.utils.annotation.ApiKeyVersionsProviderTest:
 - testProvideArgumentsWithDefaultRange
 - testProvideArgumentsWithExplicitRange
 - testToVersionTooNewThrowsException
+org.apache.kafka.common.utils.internals.AbstractIteratorTest:
+- testEmptyIterator
+- testIterator
+org.apache.kafka.common.utils.internals.ByteUtilsTest:
+- testBytesLexicographicCases
+- testCorrectnessReadUnsignedVarint
+- testCorrectnessWriteUnsignedVarint
+- testDouble
+- testIncrement
+- testIncrementUpperBoundary
+- testIncrementWithSubmap
+- testInvalidVarint
+- testInvalidVarlong
+- testReadInt
+- testReadUnsignedInt
+- testReadUnsignedIntLEFromArray
+- testReadUnsignedIntLEFromInputStream
+- testSizeOfUnsignedVarint
+- testSizeOfVarlong
+- testUnsignedVarintSerde
+- testVarintSerde
+- testVarlongSerde
+- testWriteUnsignedIntLEToArray
+- testWriteUnsignedIntLEToOutputStream
+org.apache.kafka.common.utils.internals.ChecksumsTest:
+- testUpdateByteBuffer
+- testUpdateByteBufferWithOffsetPosition
+- testUpdateInt
+- testUpdateLong
+org.apache.kafka.common.utils.internals.CircularIteratorTest:
+- testCycleCollection
+- testEmptyCollection
+- testNullCollection
+org.apache.kafka.common.utils.internals.Crc32CTest:
+- testValue
+org.apache.kafka.common.utils.internals.ExponentialBackoffManagerTest:
+- testBackOffWithJitter
+- testBackOffWithoutJitter
+- testCanAttempt
+- testIncrementAttempt
+- testInitialState
+- testResetAttempts
+org.apache.kafka.common.utils.internals.ExponentialBackoffTest:
+- testExponentialBackoff
+- testExponentialBackoffWithInvalidJitter
+- testExponentialBackoffWithoutJitter
+org.apache.kafka.common.utils.internals.FixedOrderMapTest:
+- shouldForbidConditionalRemove
+- shouldForbidRemove
+- shouldMaintainOrderWhenAdding
+org.apache.kafka.common.utils.internals.ImplicitLinkedHashCollectionTest:
+- testCollisions
+- testEmptyListIterator
+- testEnlargement
+- testEquals
+- testFindContainsRemoveOnEmptyCollection
+- testInsertDelete
+- testInsertingTheSameObjectMultipleTimes
+- testListIteratorCreation
+- testListIteratorRemove
+- testListIteratorTraversal
+- testListViewGet
+- testListViewModification
+- testManyInsertsAndDeletes
+- testMoveToEnd
+- testNullForbidden
+- testRemovals
+- testSameKeysDifferentValues
+- testSetViewGet
+- testSetViewModification
+- testSort
+- testTraversal
+org.apache.kafka.common.utils.internals.ImplicitLinkedHashMultiCollectionTest:
+- testEnlargement
+- testFindFindAllContainsRemoveOnEmptyCollection
+- testInsertDelete
+- testManyInsertsAndDeletes
+- testNullForbidden
+- testTraversal
+org.apache.kafka.common.utils.internals.PrimitiveRefTest:
+- testIntRef
+- testLongRef
+org.apache.kafka.common.utils.internals.SanitizerTest:
+- testJmxSanitize
+- testSanitize
+org.apache.kafka.common.utils.internals.ThreadUtilsTest:
+- testThreadNameWithNumberDemon
+- testThreadNameWithNumberNoDemon
+- testThreadNameWithoutNumberDemon
+- testThreadNameWithoutNumberNoDemon
 org.apache.kafka.server.policy.AlterConfigPolicyTest:
 - testRequestMetadataEquals

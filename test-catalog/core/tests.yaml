@@ -25,14 +25,6 @@ kafka.KafkaConfigTest:
 - testKafkaSslPasswords
 - testKafkaSslPasswordsWithSymbols
 - testMustContainQuorumVotersIfUsingProcessRoles
-kafka.admin.AddPartitionsTest:
-- testIncrementPartitions
-- testManualAssignmentOfReplicas
-- testMissingPartitionsInCreatePartitions
-- testMissingPartitionsInCreateTopics
-- testReplicaPlacementAllServers
-- testReplicaPlacementPartialServers
-- testWrongReplicaCount
 kafka.admin.RemoteTopicCrudTest:
 - testClusterWideDisablementOfTieredStorageWithEnabledTieredTopic
 - testClusterWithoutTieredStorageStartsSuccessfullyIfTopicWithTieringDisabled
@@ -944,12 +936,6 @@ kafka.docker.KafkaDockerWrapperTest:
 - testPrepareToolsLog4jConfigs
 - testPrepareToolsLog4jConfigsWithoutEnvVariable
 - testPrepareToolsLog4jConfigsWithoutMountedFile
-kafka.log.LogCleanerParameterizedIntegrationTest:
-- cleanerConfigUpdateTest
-- cleanerTest
-- testCleanerWithMessageFormatV0V1V2
-- testCleaningNestedMessagesWithV0V1
-- testCleansCombinedCompactAndDeleteTopic
 kafka.log.LogCleanerTest:
 - testAbortMarkerRemoval
 - testAbortMarkerRetentionWithEmptyBatch
@@ -966,6 +952,8 @@ kafka.log.LogCleanerTest:
 - testCleanSegmentsWithConcurrentSegmentDeletion
 - testCleanTombstone
 - testCleanWithTransactionsSpanningSegments
+- testCleanedSegmentOffsetOverflow
+- testCleanedSegmentSizeOverflow
 - testCleaningBeyondMissingOffsets
 - testCleaningWithDeletes
 - testCleaningWithKeysConflictingWithTxnMarkerKeys
@@ -1001,7 +989,6 @@ kafka.log.LogCleanerTest:
 - testSegmentGroupingFollowingLoadOfZeroIndex
 - testSegmentGroupingWithSparseOffsets
 - testSegmentGroupingWithSparseOffsetsAndEmptySegments
-- testSegmentWithOffsetOverflow
 - testSizeTrimmedForPreallocatedAndCompactedTopic
 kafka.log.LogConfigTest:
 - shouldValidateThrottledReplicasConfig
@@ -1105,58 +1092,6 @@ kafka.log.LogManagerTest:
 - testTopicConfigChangeUpdatesLogConfig
 - testTwoLogManagersUsingSameDirFails
 - testUpdateCordonedLogDirs
-kafka.log.UnifiedLogTest:
-- testAbortedTransactionSpanningMultipleSegments
-- testActiveSegmentDeletionDueToRetentionTimeBreachWithRemoteStorage
-- testAppendToTransactionIndexFailure
-- testBackgroundDeletionWithIOException
-- testCannotDeleteSegmentsAtOrAboveHighWatermark
-- testCannotIncrementLogStartOffsetPastHighWatermark
-- testConvertToOffsetMetadataDoesNotThrowOffsetOutOfRangeError
-- testDeletableSegmentsFilter
-- testDeletableSegmentsIteration
-- testDisabledVerificationClearsVerificationGuard
-- testEmptyTransactionStillClearsVerificationGuard
-- testEnableRemoteLogStorageOnCompactedTopics
-- testEnablingVerificationWhenRequestIsAtLogLayer
-- testEndTxnWithFencedProducerEpoch
-- testFetchOffsetByTimestampShouldReadOnlyLocalLogWhenLogIsEmpty
-- testGetFirstBatchTimestampForSegments
-- testIncrementLocalLogStartOffsetAfterLocalLogDeletion
-- testLastStableOffsetDoesNotExceedLogStartOffsetAfterSegmentDeletion
-- testLastStableOffsetDoesNotExceedLogStartOffsetMidSegment
-- testLastStableOffsetWithMixedProducerData
-- testLeaderRejectsTVUnknownForTransactionMarker
-- testLoadPartitionDirWithNoSegmentsShouldNotThrow
-- testLogOffsetsListener
-- testMaybeUpdateHighWatermarkAsFollower
-- testNextTransactionVerificationGuardNotCleared
-- testNoOpWhenRemoteLogStorageIsDisabled
-- testNonZeroSequenceOnFirstAppendNonZeroEpoch
-- testOffsetSnapshot
-- testRecoveryPointNotIncrementedOnProducerStateSnapshotFlushFailure
-- testRemoteLogStorageIsDisabledOnInternalAndRemoteLogMetadataTopic
-- testRenamingDirWithoutReinitialization
-- testReplicationWithTVUnknownAllowed
-- testRetentionOnLocalLogDeletionWhenRemoteLogCopyDisabled
-- testRetentionOnLocalLogDeletionWhenRemoteLogCopyEnabledAndDefaultLocalRetentionBytes
-- testRetentionOnLocalLogDeletionWhenRemoteLogCopyEnabledAndDefaultLocalRetentionMs
-- testSegmentDeletionEnabledBeforeUploadToRemoteTierWhenLogStartOffsetMovedAhead
-- testSegmentDeletionWithHighWatermarkInitialization
-- testStaleProducerEpochReturnsRecoverableErrorForTV1Clients
-- testStaleProducerEpochReturnsRecoverableErrorForTV2Clients
-- testStartOffsetsRemoteLogStorageIsEnabled
-- testTV2MarkerWithBumpedEpochSucceeds
-- testTransactionIndexUpdatedThroughReplication
-- testTransactionIsOngoingAndVerificationGuardTV1
-- testTransactionIsOngoingAndVerificationGuardTV2
-- testUpdateLogOffsetsListener
-- testZombieCoordinatorFenced
-- testZombieCoordinatorFencedEmptyTransaction
-kafka.metrics.KafkaMetricsGroupTest:
-- testTaggedMetricName
-- testTaggedMetricNameWithEmptyValue
-- testUntaggedMetricName
 kafka.metrics.MetricsTest:
 - testBrokerStateMetric
 - testBrokerTopicMetricsBytesInOut
@@ -1397,24 +1332,6 @@ kafka.server.AddPartitionsToTxnRequestServerTest:
 - shouldReceiveOperationNotAttemptedWhenOtherPartitionHasError
 - testOneSuccessOneErrorInBatchedRequest
 - testVerifyOnly
-kafka.server.AlterPartitionManagerTest:
-- testAuthorizationFailed
-- testBasic
-- testBasicSentLeaderRecoveryState
-- testBasicWithBrokerEpoch
-- testInvalidRequest
-- testInvalidUpdateVersion
-- testNotLeaderOrFollower
-- testOneInFlight
-- testOverwriteWithinBatch
-- testPartitionMissingInResponse
-- testRetryOnAuthenticationFailure
-- testRetryOnUnsupportedVersionError
-- testSingleBatch
-- testStaleBrokerEpoch
-- testSubmitFromCallback
-- testUnknownServer
-- testUnknownTopicPartition
 kafka.server.AlterReplicaLogDirsRequestTest:
 - testAlterReplicaLogDirsRequest
 - testAlterReplicaLogDirsRequestErrorCode
@@ -1515,6 +1432,7 @@ kafka.server.ConfigAdminManagerTest:
 - testReassembleLegacyResponse
 - testValidateResourceNameIsCurrentNodeId
 kafka.server.ConsumerGroupDescribeRequestTest:
+- testConsumerGroupDescribeIncludesPartitionsPendingRevocation
 - testConsumerGroupDescribeWhenFeatureFlagNotEnabled
 - testConsumerGroupDescribeWithMigrationMember
 - testConsumerGroupDescribeWithNewGroupCoordinator
@@ -1536,6 +1454,7 @@ kafka.server.ConsumerGroupHeartbeatRequestTest:
 - testMemberIdGeneratedOnServerWhenApiVersionIs0
 - testRejoiningStaticMemberGetsAssignmentsBackWhenNewGroupCoordinatorIsEnabled
 - testStaticMemberRemovedAfterSessionTimeoutExpiryWhenNewGroupCoordinatorIsEnabled
+- testStaticMembersRejoinWithDifferentServerAssignor
 - testUpdateConsumerGroupHeartbeatConfigSuccessful
 kafka.server.ConsumerGroupHeartbeatRequestTest$WithAssignmentBatchingDisabledTest:
 - testConsumerGroupHeartbeatFailureIfMemberIdMissingForVersionsAbove0
@@ -1555,6 +1474,7 @@ kafka.server.ConsumerGroupHeartbeatRequestTest$WithAssignmentBatchingDisabledTes
 - testMemberIdGeneratedOnServerWhenApiVersionIs0
 - testRejoiningStaticMemberGetsAssignmentsBackWhenNewGroupCoordinatorIsEnabled
 - testStaticMemberRemovedAfterSessionTimeoutExpiryWhenNewGroupCoordinatorIsEnabled
+- testStaticMembersRejoinWithDifferentServerAssignor
 - testUpdateConsumerGroupHeartbeatConfigSuccessful
 kafka.server.ConsumerProtocolMigrationTest:
 - testDowngradeFromEmptyConsumerToClassicGroupWithBidirectionalPolicy
@@ -2388,6 +2308,8 @@ kafka.server.OffsetDeleteRequestTest:
 - testOffsetDeleteWithOldConsumerGroupProtocol
 kafka.server.OffsetFetchRequestTest:
 - testCommittedOffsetsDeletedWhenTopicDeleted
+- testFetchOffsetWithDeletedTopicUsingTopicIds
+- testFetchOffsetWithDeletedTopicUsingTopicNames
 - testFetchOffsetWithRecreatedTopic
 - testGroupErrors
 - testMultiGroupsOffsetFetchWithNewConsumerGroupProtocol
@@ -2761,6 +2683,7 @@ kafka.server.share.DelayedShareFetchTest:
 - testDelayedShareFetchTryCompleteReturnsTrue
 - testEmptyFutureReturnedByDelayedShareFetchOnComplete
 - testExceptionInMinBytesCalculation
+- testForceCompleteNotTriggersDelayedActionsQueueWhenFetchDataIsEmpty
 - testForceCompleteTriggersDelayedActionsQueue
 - testLocksReleasedAcquireException
 - testLocksReleasedForCompletedFetch
@@ -2768,6 +2691,7 @@ kafka.server.share.DelayedShareFetchTest:
 - testPartitionMaxBytesFromUniformStrategyInCombineLogReadResponse
 - testPartitionMaxBytesFromUniformStrategyWhenAllPartitionsAreAcquirable
 - testPartitionMaxBytesFromUniformStrategyWhenFewPartitionsAreAcquirable
+- testRemoteStorageFetchCompletionNotTriggerActionsQueue
 - testRemoteStorageFetchCompletionPostRegisteringCallbackByPendingFetchesCompletion
 - testRemoteStorageFetchCompletionPostRegisteringCallbackByTimerTaskCompletion
 - testRemoteStorageFetchHappensForAllTopicPartitions
@@ -2886,6 +2810,10 @@ kafka.server.share.SharePartitionTest:
 - testAcknowledgeOffsetWithWriteShareGroupStateFailure
 - testAcknowledgeOutOfRangeCachedData
 - testAcknowledgeOutOfRangeCachedDataFirstBatch
+- testAcknowledgePerOffsetRejectWithDlqDisabled
+- testAcknowledgePerOffsetRejectWithDlqEnabled
+- testAcknowledgeRejectWithDlqDisabled
+- testAcknowledgeRejectWithDlqEnabled
 - testAcknowledgeRollbackWithFullBatchError
 - testAcknowledgeRollbackWithSubsetError
 - testAcknowledgeSingleRecordBatch

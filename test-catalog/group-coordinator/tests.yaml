@@ -6,9 +6,9 @@ org.apache.kafka.coordinator.group.GroupConfigManagerTest:
 - testUpdateConfigWithNullGroupId
 - testUpdateGroupConfig
 org.apache.kafka.coordinator.group.GroupConfigTest:
-- testAssignmentIntervalMsAbsentWhenNotConfigured
-- testAssignmentIntervalMsNotValidatedWhenNotConfigured
-- testAssignorOffloadEnableAbsentWhenNotConfigured
+- testAllFieldsAbsentWhenNotConfigured
+- testAllFieldsPresentWhenConfigured
+- testAllGroupConfigSynonyms
 - testEvaluateDoesNotModifyInput
 - testEvaluateEmptyPropsReturnsEmpty
 - testEvaluateMaxBoundedValueAboveMaxIsCapped
@@ -19,6 +19,7 @@ org.apache.kafka.coordinator.group.GroupConfigTest:
 - testFromPropsWithDefaultValue
 - testInvalidConfigName
 - testInvalidProps
+- testNotValidatedWhenNotConfigured
 - testValidShareAutoOffsetResetValues
 - testValidShareIsolationLevelValues
 - testValidateWithAllGroupTypeConfigs
@@ -603,6 +604,7 @@ org.apache.kafka.coordinator.group.GroupMetadataManagerTest:
 - testStaticMembersFencedInstanceBatchLeaveGroup
 - testStaticMembersJoinGroupWithMaxSize
 - testStaticMembersLeaveUnknownGroup
+- testStaticMembersRejoinWithNewServerAssignor
 - testStaticMembersUnknownInstanceBatchLeaveGroup
 - testStaticMembersValidBatchLeaveGroup
 - testStreamsGroupAssignmentInterval
@@ -992,6 +994,7 @@ org.apache.kafka.coordinator.group.modern.UnionSetTest:
 - testUnion
 org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupMemberTest:
 - testAsConsumerGroupDescribeMember
+- testAsConsumerGroupDescribeMemberWithSameTopicPendingRevocation
 - testAsConsumerGroupDescribeWithTargetAssignmentNull
 - testAsConsumerGroupDescribeWithTopicNameNotFound
 - testAssignedAndPendingRevocationEpoch
@@ -1083,6 +1086,8 @@ org.apache.kafka.coordinator.group.modern.share.ShareGroupAssignmentBuilderTest:
 - testStableToStableWithAssignmentTopicsNoLongerInSubscription
 - testStableToStableWithNewPartitions
 org.apache.kafka.coordinator.group.modern.share.ShareGroupConfigProviderTest:
+- testAutoOffsetResetWithGroupConfig
+- testAutoOffsetResetWithoutGroupConfig
 - testDeliveryCountLimitOrDefaultWithGroupConfig
 - testDeliveryCountLimitOrDefaultWithoutGroupConfig
 - testIsRenewAcknowledgeDisabledWithGroupConfig
