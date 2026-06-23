@@ -1,6 +1,6 @@
 ---
 title: Configuring a Streams Application
-description: 
+description: Kafka Streams application configuration options and runtime settings.
 weight: 2
 tags: ['kafka', 'docs']
 aliases: 
@@ -65,6 +65,7 @@ This section contains the most common Streams configuration parameters. For a fu
     * default.timestamp.extractor
     * default.value.serde
     * deserialization.exception.handler
+    * dsl.store.format
     * enable.metrics.push
     * ensure.explicit.internal.resource.naming
     * group.protocol
@@ -600,6 +601,23 @@ Defines a default state store implementation to be used by any stateful DSL oper
 `BuiltInDslStoreSuppliers.RocksDBDslStoreSuppliers`
 </td> </tr>  
 <tr>  
+<td>
+
+dsl.store.format
+</td>
+<td>
+
+Low
+</td>
+<td>
+
+Controls whether DSL operators materialize headers-aware state stores. Case-insensitive. Accepted values: `default` (uses existing timestamped or plain store variants per operator) and `headers` (selects headers-aware stores that can persist record headers alongside values and timestamps; local state can be larger than under `default`).
+</td>
+<td>
+
+`default`
+</td> </tr>
+<tr>
 <td>
 
 ensure.explicit.internal.resource.naming
@@ -1359,13 +1377,28 @@ Serde for the inner class of a windowed record. Must implement the `Serde` inter
 > 
 > This is discussed in more detail in [Data types and serialization](datatypes.html#streams-developer-guide-serdes).
 
+### dsl.store.format {#dsl-store-format}
+
+> Selects the state store format used by all DSL operators that materialize a state store. Accepted values are `DEFAULT` and `HEADERS` (case-insensitive); the default is `DEFAULT`.
+>
+> * `DEFAULT`: Uses the existing timestamped or plain store variant per operator. Existing applications are unaffected.
+> * `HEADERS`: Uses headers-aware stores (introduced by [KIP-1271](https://cwiki.apache.org/confluence/x/QIM8G)) that can persist record headers alongside the value and timestamp.
+>
+> This config is global. Per-operator customization is possible by providing a custom `DslStoreSuppliers` via `Materialized.withStoreType(...)`, or by supplying explicit headers-aware store suppliers. Note that `dsl.store.format` is orthogonal to `dsl.store.suppliers.class`, which selects the store *implementation* (e.g., RocksDB vs in-memory); the two can be set independently.
+>
+> The accepted string values are `DEFAULT` and `HEADERS` (case-insensitive). These differ from the `DslStoreFormat` Java enum, which has constants `PLAIN`, `TIMESTAMPED`, and `HEADERS`; `DslStoreFormat.DEFAULT` does not exist as an enum constant.
+>
+> See [KIP-1271](https://cwiki.apache.org/confluence/x/QIM8G) for migration procedures, changelog compatibility, restore behavior, and per-record overhead.
+>
+> **Current limitations**: `dsl.store.format=HEADERS` changes the state store format. It does not define how DSL operators create headers for output records. Some operators write empty headers to their materialized stores, and the buffer stores used by `suppress()` and left/outer stream-stream joins are not headers-aware. See [Stateful transformations](/{version}/streams/developer-guide/dsl-api.html#stateful-transformations) and the [Streams upgrade guide](/{version}/streams/upgrade-guide.html#current-limitations) for details.
+
 ### ensure.explicit.internal.resource.naming
 
 > Whether to enforce explicit naming for all internal resources of the topology, including internal topics (e.g., changelog and repartition topics) and their associated state stores. When enabled, the application will refuse to start if any internal resource has an auto-generated name. 
 
 ### group.protocol
 
-> The group protocol used by the Kafka Streams client used for coordination. It determines how the client will communicate with the Kafka brokers and other clients in the same group. The default value is `"classic"`, which is the classic consumer group protocol. Can be set to `"streams"` (requires broker-side enablement) to enable the new Kafka Streams group protocol. Note that the "streams" rebalance protocol is an Early Access feature and should not be used in production. 
+> The group protocol used by the Kafka Streams client used for coordination. It determines how the client will communicate with the Kafka brokers and other clients in the same group. The default value is `"classic"`, which is the classic consumer group protocol. Can be set to `"streams"` (requires broker-side enablement) to enable the new Kafka Streams group protocol.
 
 ### rack.aware.assignment.non_overlap_cost
 
@@ -1588,6 +1621,8 @@ Serde for the inner class of a windowed record. Must implement the `Serde` inter
 > 
 > Recommendation:
 >     While it is technically possible to use EOS with any replication factor, using a replication factor lower than 3 effectively voids EOS. Thus it is strongly recommended to use a replication factor of 3 (together with `min.in.sync.replicas=2`). This recommendation applies to all topics (i.e. `__transaction_state`, `__consumer_offsets`, Kafka Streams internal topics, and user topics).
+
+> When exactly-once processing is enabled, Kafka Streams sets `transaction.timeout.ms` to 10000 (10 seconds) by default. This bounds how long a transaction may remain open before the broker aborts it and fences the producer. If your application requires longer processing times per poll-process-commit cycle, you can increase this value via `StreamsConfig.producerPrefix(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG)`, but note that when EOS is enabled Kafka Streams also requires `transaction.timeout.ms` to be greater than or equal to `commit.interval.ms`, otherwise the application will fail to start. In addition, the value must not exceed the broker's `transaction.max.timeout.ms`. Keep in mind that a higher transaction timeout delays fencing of zombie producers and may extend how long `read_committed` consumers block on uncommitted data, so it should only be increased when necessary.
 
 ### processor.wrapper.class
 

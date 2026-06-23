@@ -17,6 +17,7 @@
 package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.ClientResponse;
+import org.apache.kafka.clients.consumer.CloseOptions;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler;
 import org.apache.kafka.clients.consumer.internals.events.ErrorEvent;
@@ -36,10 +37,10 @@ import org.apache.kafka.common.requests.StreamsGroupHeartbeatRequest;
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.utils.LogCaptureAppender;
-import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.MockTime;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.common.utils.Timer;
+import org.apache.kafka.common.utils.internals.LogContext;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.kafka.common.requests.StreamsGroupHeartbeatRequest.LEAVE_GROUP_MEMBER_EPOCH;
+import static org.apache.kafka.common.requests.StreamsGroupHeartbeatRequest.LEAVE_GROUP_STATIC_MEMBER_EPOCH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -164,7 +166,8 @@ class StreamsGroupHeartbeatRequestManagerTest {
         Optional.of(ENDPOINT),
         Optional.of(RACK_ID),
         SUBTOPOLOGIES,
-        CLIENT_TAGS
+        CLIENT_TAGS,
+        Map::of
     );
 
     private final Time time = new MockTime();
@@ -329,6 +332,55 @@ class StreamsGroupHeartbeatRequestManagerTest {
             assertEquals(1, result.unsentRequests.size());
             assertEquals(heartbeatIntervalMs, result.timeUntilNextPollMs);
             verify(pollTimer).update(time.milliseconds());
+        }
+    }
+
+    @Test
+    public void testSkipLeaveHeartbeatForRemainInGroupWithDynamicMember() {
+        final StreamsGroupHeartbeatRequestManager heartbeatRequestManager = createStreamsGroupHeartbeatRequestManager();
+        when(coordinatorRequestManager.coordinator()).thenReturn(Optional.of(coordinatorNode));
+        when(membershipManager.state()).thenReturn(MemberState.LEAVING);
+        when(membershipManager.leaveGroupOperation()).thenReturn(CloseOptions.GroupMembershipOperation.REMAIN_IN_GROUP);
+        when(membershipManager.groupInstanceId()).thenReturn(Optional.empty());
+
+        final NetworkClientDelegate.PollResult result = heartbeatRequestManager.poll(time.milliseconds());
+
+        assertEquals(0, result.unsentRequests.size());
+        verify(membershipManager).onHeartbeatRequestSkipped();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CloseOptions.GroupMembershipOperation.class, names = {"DEFAULT", "REMAIN_IN_GROUP"})
+    public void testSendLeaveHeartbeatForStaticMember(final CloseOptions.GroupMembershipOperation operation) {
+        // Static members always send a leave heartbeat (with epoch -2) so the broker can hold the
+        // assignment until session timeout, regardless of the close operation.
+        final long heartbeatIntervalMs = 1234;
+        try (
+            final MockedConstruction<HeartbeatRequestState> ignored = mockConstruction(
+                HeartbeatRequestState.class,
+                (mock, context) -> {
+                    when(mock.canSendRequest(time.milliseconds())).thenReturn(false);
+                    when(mock.heartbeatIntervalMs()).thenReturn(heartbeatIntervalMs);
+                    when(mock.requestInFlight()).thenReturn(false);
+                })
+        ) {
+            final StreamsGroupHeartbeatRequestManager heartbeatRequestManager = createStreamsGroupHeartbeatRequestManager();
+            when(coordinatorRequestManager.coordinator()).thenReturn(Optional.of(coordinatorNode));
+            when(membershipManager.state()).thenReturn(MemberState.LEAVING);
+            when(membershipManager.leaveGroupOperation()).thenReturn(operation);
+            when(membershipManager.groupInstanceId()).thenReturn(Optional.of(INSTANCE_ID));
+            when(membershipManager.memberEpoch()).thenReturn(LEAVE_GROUP_STATIC_MEMBER_EPOCH);
+            when(membershipManager.groupId()).thenReturn(GROUP_ID);
+            when(membershipManager.memberId()).thenReturn(MEMBER_ID);
+
+            final NetworkClientDelegate.PollResult result = heartbeatRequestManager.poll(time.milliseconds());
+
+            assertEquals(1, result.unsentRequests.size());
+            verify(membershipManager, never()).onHeartbeatRequestSkipped();
+            final StreamsGroupHeartbeatRequest req =
+                (StreamsGroupHeartbeatRequest) result.unsentRequests.get(0).requestBuilder().build();
+            assertEquals(LEAVE_GROUP_STATIC_MEMBER_EPOCH, req.data().memberEpoch());
+            assertEquals(INSTANCE_ID, req.data().instanceId());
         }
     }
 
