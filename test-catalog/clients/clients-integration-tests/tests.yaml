@@ -7,6 +7,13 @@ org.apache.kafka.clients.ClientRebootstrapTest:
 - testConsumerRebootstrapDisabled
 - testProducerRebootstrap
 - testProducerRebootstrapDisabled
+- testRebootstrapOnMetadataClusterCheckFail
+org.apache.kafka.clients.CreateTopicsRequestTest:
+- testCreateClusterMetadataTopic
+- testCreateTopicsRequestVersions
+- testErrorCreateTopicsRequests
+- testInvalidCreateTopicsRequests
+- testValidCreateTopicsRequests
 org.apache.kafka.clients.CreateTopicsRequestWithPolicyTest:
 - testErrorCreateTopicsRequests
 - testValidCreateTopicsRequests
@@ -16,13 +23,6 @@ org.apache.kafka.clients.MetadataVersionIntegrationTest:
 - testUpgradeSameVersion
 org.apache.kafka.clients.MetricsDuringTopicCreationDeletionTest:
 - testMetricsDuringTopicCreateDelete
-org.apache.kafka.clients.TransactionsExpirationTest:
-- testFatalErrorAfterInvalidProducerIdMappingWithTV1
-- testFatalErrorAfterInvalidProducerIdMappingWithTV2
-- testTransactionAfterProducerIdExpiresWithTV1
-- testTransactionAfterProducerIdExpiresWithTV2
-org.apache.kafka.clients.TransactionsWithMaxInFlightOneTest:
-- testTransactionalProducerSingleBrokerMaxInFlightOne
 org.apache.kafka.clients.admin.AddPartitionsTest:
 - testIncrementPartitions
 - testManualAssignmentOfReplicas
@@ -31,6 +31,8 @@ org.apache.kafka.clients.admin.AddPartitionsTest:
 - testReplicaPlacementAllServers
 - testReplicaPlacementPartialServers
 - testWrongReplicaCount
+org.apache.kafka.clients.admin.AdminClientTimeoutIntegrationTest:
+- testCallInFlightTimeouts
 org.apache.kafka.clients.admin.AdminClientWithPoliciesIntegrationTest:
 - testInvalidAlterConfigsDueToPolicy
 org.apache.kafka.clients.admin.AdminFenceProducersTest:
@@ -261,7 +263,6 @@ org.apache.kafka.clients.consumer.PlaintextConsumerSubscriptionTest:
 org.apache.kafka.clients.consumer.PlaintextConsumerTest:
 - testAsyncConsumeCoordinatorFailover
 - testAsyncConsumerAutoOffsetReset
-- testAsyncConsumerCloseLeavesGroupOnInterrupt
 - testAsyncConsumerCloseOnBrokerShutdown
 - testAsyncConsumerClusterResourceListener
 - testAsyncConsumerConsumeMessagesWithCreateTime
@@ -300,7 +301,6 @@ org.apache.kafka.clients.consumer.PlaintextConsumerTest:
 - testAsyncConsumerUnsubscribeDoesNotCommitOffsetsWithAutoCommitEnabled
 - testAsyncStaticMemberCloseWithLeaveGroupTriggersRebalance
 - testClassicConsumerAutoOffsetReset
-- testClassicConsumerCloseLeavesGroupOnInterrupt
 - testClassicConsumerCloseOnBrokerShutdown
 - testClassicConsumerClusterResourceListener
 - testClassicConsumerConsumeMessagesWithCreateTime
@@ -479,9 +479,6 @@ org.apache.kafka.clients.producer.ProducerSendWhileDeletionTest:
 - testSendWithRecreatedTopic
 - testSendWithTopicDeletionMidWay
 - testSendWithTopicReassignmentIsMidWay
-org.apache.kafka.clients.producer.SocketServerMemoryPoolTest:
-- testProduceRequestWithCorruptBody
-- testProduceRequestWithUnsupportedVersion
 org.apache.kafka.clients.security.GroupAuthorizerIntegrationTest:
 - testAsyncConsumeCloseWithGroupPermission
 - testAsyncConsumeUnsubscribeWithGroupPermission
@@ -493,6 +490,9 @@ org.apache.kafka.clients.security.GroupAuthorizerIntegrationTest:
 - testClassicConsumeUnsubscribeWithoutGroupPermission
 - testUnauthorizedProduceAndConsumeWithAsyncConsumer
 - testUnauthorizedProduceAndConsumeWithClassicConsumer
+org.apache.kafka.common.SocketServerMemoryPoolTest:
+- testRequestWithCorruptBody
+- testRequestWithUnsupportedVersion
 org.apache.kafka.server.quota.CustomQuotaCallbackTest:
 - testCustomQuotaCallbackWithControllerServer
 - testMonitorableCustomQuotaCallbackWithCombinedMode
